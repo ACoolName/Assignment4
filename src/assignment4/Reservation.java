@@ -8,9 +8,8 @@ package assignment4;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,11 +57,36 @@ public class Reservation implements ReservationInterface {
 
     @Override
     public String reserve(String plane_no, long id) {
-        Date date = new Date();
-        System.out.println("");
-        String query = "UPDATE seat "
-                     + "SET reserved='" +id +"' AND ";
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int timeStamp = (int) (System.currentTimeMillis() / 1000L);
+        int rowsInserted = 0;
+        String availableSeat = null;
+        System.out.println(timeStamp);
+        String availableQuery = "SELECT seat_no FROM seat WHERE booked is null and rownum=1";
+        String reserveQuery = "UPDATE seat "
+                + "SET reserved=" + id + ", booking_time=" + timeStamp + " WHERE plane_no = '" + plane_no + "'";
+        System.out.println(availableQuery);
+        try {
+            stmt = prepare(availableQuery);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                availableSeat = rs.getString(1);
+//                reserveQuery += " and seat_no='" + availableSeat + "'";
+                System.out.println("Here ");
+//                System.out.println(availableSeat);
+//                System.out.println(reserveQuery);
+            }
+            if (availableSeat != null) {
+                stmt = prepare(reserveQuery);
+                rowsInserted = stmt.executeUpdate();
+                if (rowsInserted > 0) {
+                    return availableSeat;
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return null;
     }
 
     @Override
