@@ -20,7 +20,7 @@ public class Reservation implements ReservationInterface {
     private static Reservation instance;
     private static Connection conn = null;
     private static PreparedStatement stmt;
-    private String URL = 'datdb.cphbusiness.dk';
+    private String URL = "datdb.cphbusiness.dk";
     private String user;
     private String pw;
 
