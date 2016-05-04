@@ -62,9 +62,8 @@ public class Reservation implements ReservationInterface {
         String availableSeat = null;
         System.out.println(timeStamp);
         String availableQuery = "SELECT seat_no FROM seat WHERE booked is null and rownum=1";
-        String reserveQuery = "UPDATE seat "
-                + "SET reserved=" + id + ", booking_time=" + timeStamp + " WHERE plane_no = '" + plane_no + "'";
-        System.out.println(availableQuery);
+        String reserveQuery = "UPDATE seat SET reserved= ? , booking_time= ? WHERE plane_no = ?";
+        System.out.println("test " + availableQuery);
         try {
             stmt = prepare(availableQuery);
             ResultSet rs = stmt.executeQuery();
@@ -77,6 +76,9 @@ public class Reservation implements ReservationInterface {
             }
             if (availableSeat != null) {
                 stmt = prepare(reserveQuery);
+                stmt.setLong(1, id);
+                stmt.setInt(2, timeStamp);
+                stmt.setString(3, plane_no);
                 rowsInserted = stmt.executeUpdate();
                 if (rowsInserted > 0) {
                     return availableSeat;
