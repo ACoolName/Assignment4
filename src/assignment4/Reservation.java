@@ -9,7 +9,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -17,20 +20,24 @@ import java.util.Properties;
  */
 public class Reservation implements ReservationInterface {
 
-    private static Reservation instance;
     private static Connection conn = null;
     private static PreparedStatement stmt;
-    private String URL = "datdb.cphbusiness.dk";
+    private String URL = "jdbc:oracle:thin:@datdb.cphbusiness.dk:1521:dat";
     private String user;
     private String pw;
 
     public Reservation(String user, String pw) throws SQLException {
         this.user = user;
         this.pw = pw;
-        getConnection();
+        try {
+            getConnection();
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
-    private Connection getConnection() throws SQLException {
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("oracle.jdbc.driver.OracleDriver");
         conn = DriverManager.getConnection(URL, user, pw);
         System.out.println("Connected to database");
         return conn;
@@ -44,13 +51,17 @@ public class Reservation implements ReservationInterface {
         }
         return stmt;
     }
-    
-    public void closeConnection() throws SQLException{
+
+    public void closeConnection() throws SQLException {
         conn.close();
     }
 
     @Override
-    public int reserve(String plane_no, long id) {
+    public String reserve(String plane_no, long id) {
+        Date date = new Date();
+        System.out.println("");
+        String query = "UPDATE seat "
+                     + "SET reserved='" +id +"' AND ";
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

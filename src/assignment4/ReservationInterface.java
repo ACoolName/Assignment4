@@ -13,7 +13,7 @@ public interface ReservationInterface {
     
     // plane_no -> the plane number
     // id -> id of the customer
-    int reserve(String plane_no, long id);
+    String reserve(String plane_no, long id);
     
     // plane_no -> plane number
     // seat_no -> seat number
