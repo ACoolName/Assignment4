@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  *
  * @author teo
  */
-public class UserThread implements Runnable {
+public class UserThread extends Thread {
 
     private Reservation reservation;
     private String plane_no;
@@ -22,24 +22,29 @@ public class UserThread implements Runnable {
     private Random rn = new Random();
     int result;
     private MasterThread master;
-    
-    public UserThread(Reservation reservation, String plane_no, long customer_id) {
+
+    public UserThread(Reservation reservation, String plane_no, long customer_id, MasterThread master) {
         this.reservation = reservation;
         this.plane_no = plane_no;
         this.customer_id = customer_id;
+        this.master = master;
     }
-    
+
     @Override
     public void run() {
         makeBooking();
     }
-    
+
     private void makeBooking() {
         try {
             String seat = reservation.reserve(plane_no, customer_id);
-            long sleepTime = (long) rn.nextInt(10);
-            this.wait(sleepTime);
+            long sleepTime = (long) rn.nextInt(10000);
+//            System.out.println("I am waiting for " + sleepTime + " seconnds thread " + customer_id);
+            Thread.sleep(sleepTime);
+//            System.out.println("Woke up from fucking sleep thread " + customer_id);
+//            result = reservation.badBook(plane_no, seat, customer_id);
             result = reservation.book(plane_no, seat, customer_id);
+//            System.out.println("Result: " + result + " customerId " + customer_id);
             master.notify(result, (int) customer_id);
         } catch (InterruptedException ex) {
             Logger.getLogger(UserThread.class.getName()).log(Level.SEVERE, null, ex);

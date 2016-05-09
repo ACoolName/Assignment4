@@ -23,27 +23,28 @@ public class MasterThread {
     private static String plane_no = "CR9";
     private static HashMap<Integer, Integer> results;
 
-    public static void main(String[] args) {
+    public void mainMethod() throws SQLException {
+        results = new HashMap<>();
         try {
             reservation = new Reservation("db_020", "db2016");
         } catch (SQLException ex) {
             Logger.getLogger(MasterThread.class.getName()).log(Level.SEVERE, null, ex);
         }
-        int i = 0;
+        int i = 1;
         while (!reservation.isAllBooked(plane_no)) {
-            UserThread t = new UserThread(reservation, plane_no, i);
-            i++;
-            t.run();
-        }
-        while (i > results.size()) {
-
+            if (!reservation.isAllReserved(plane_no)) {
+                UserThread t = new UserThread(reservation, plane_no, i, this);
+                i++;
+                t.start();
+            }
         }
         Iterator it = results.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry) it.next();
             System.out.println("Thread " + pair.getKey() + " returned " + pair.getValue());
-            it.remove();
+//            it.remove();
         }
+//        reservation.closeConnection();
 
     }
 
