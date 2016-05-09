@@ -61,18 +61,16 @@ public class Reservation implements ReservationInterface {
         int rowsInserted = 0;
         String availableSeat = null;
         System.out.println(timeStamp);
-        String availableQuery = "SELECT seat_no FROM seat WHERE booked is null and rownum=1";
+        String availableQuery = "SELECT seat_no FROM seat WHERE booked is null and (? - booking_time > 10 OR booking_time is null) and rownum=1";
         String reserveQuery = "UPDATE seat SET reserved= ? , booking_time= ? WHERE plane_no = ?";
         System.out.println("test " + availableQuery);
         try {
             stmt = prepare(availableQuery);
+            stmt.setInt(1, timeStamp);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 availableSeat = rs.getString(1);
-//                reserveQuery += " and seat_no='" + availableSeat + "'";
-                System.out.println("Here ");
-//                System.out.println(availableSeat);
-//                System.out.println(reserveQuery);
+                reserveQuery += " and seat_no='" + availableSeat + "'";
             }
             if (availableSeat != null) {
                 stmt = prepare(reserveQuery);
@@ -87,7 +85,6 @@ public class Reservation implements ReservationInterface {
         } catch (SQLException ex) {
             Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
         }
-//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         return null;
     }
 
