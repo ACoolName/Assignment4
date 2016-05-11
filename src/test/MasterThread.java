@@ -31,6 +31,7 @@ public class MasterThread {
             Logger.getLogger(MasterThread.class.getName()).log(Level.SEVERE, null, ex);
         }
         int i = 1;
+        if(reservation.isAllBooked(plane_no)) System.out.println("All seats booked");
         while (!reservation.isAllBooked(plane_no)) {
             if (!reservation.isAllReserved(plane_no)) {
                 UserThread t = new UserThread(reservation, plane_no, i, this);
