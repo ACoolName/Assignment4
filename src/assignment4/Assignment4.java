@@ -22,8 +22,10 @@ public class Assignment4 {
         try {
             // TODO code application logic here
             Reservation res = new Reservation("db_020", "db2016");
-            String a = res.reserve("CR9", 1);
-            System.out.println(a);
+//            res.bookAll("CR9");
+            res.clearAllBookings("CR9");
+//            String a = res.reserve("CR9", 1);
+//            System.out.println(a);
             
         } catch (SQLException ex) {
             Logger.getLogger(Assignment4.class.getName()).log(Level.SEVERE, null, ex);

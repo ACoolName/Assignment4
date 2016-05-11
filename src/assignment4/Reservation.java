@@ -40,7 +40,7 @@ public class Reservation implements ReservationInterface {
         Class.forName("oracle.jdbc.driver.OracleDriver");
         conn = DriverManager.getConnection(URL, user, pw);
         System.out.println("Connected to database");
-        conn.setAutoCommit(true);
+        conn.setAutoCommit(false);
         return conn;
     }
 
@@ -55,7 +55,7 @@ public class Reservation implements ReservationInterface {
         PreparedStatement stmt = null;
         PreparedStatement stmt2 = null;
         String availableSeat = null;
-        String availableQuery = "SELECT seat_no FROM seat WHERE booked is null and (? - booking_time > ? OR booking_time is null) and rownum=1";
+        String availableQuery = "SELECT seat_no FROM seat WHERE booked is null and (? - booking_time > ? OR booking_time is null) and rownum=1 for UPDATE";
         String reserveQuery = "UPDATE seat SET reserved= ? , booking_time= ? WHERE plane_no = ? and seat_no= ? ";
         try {
             stmt = conn.prepareStatement(availableQuery);
@@ -75,11 +75,18 @@ public class Reservation implements ReservationInterface {
                 rowsInserted = stmt2.executeUpdate();
 //                System.out.println("Reserve: seat: " + availableSeat + " rows: " + rowsInserted);
                 if (rowsInserted > 0) {
+                    conn.commit();
                     return availableSeat;
                 }
             }
+            conn.commit();
         } catch (SQLException ex) {
-            Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
+            try {
+                Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
+                conn.rollback();
+            } catch (SQLException ex1) {
+                Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex1);
+            }
         } finally {
             try {
                 if (stmt != null) {
@@ -98,6 +105,7 @@ public class Reservation implements ReservationInterface {
     public int badBook(String plane_no, String seat_no, long id) {
         long timeStamp = System.currentTimeMillis() / 1000L;
         int rowsInserted = 0;
+        int result;
         PreparedStatement stmt = null;
         PreparedStatement stmt2 = null;
         long customer_id = -1L;
@@ -108,13 +116,14 @@ public class Reservation implements ReservationInterface {
             stmt = conn.prepareStatement(reservationQuery);
             stmt.setString(1, seat_no);
             ResultSet rs = stmt.executeQuery();
+            conn.commit();
             if (rs.next()) {
                 customer_id = rs.getLong(1);
                 booking_time = rs.getLong(2);
             }
             rs.close();
             if (customer_id == 0) {
-                return -1; //seat not reserved
+                result = -1; //seat not reserved
             }
             if (customer_id == id) {
                 if (timeStamp - booking_time < cooldown) {
@@ -123,19 +132,26 @@ public class Reservation implements ReservationInterface {
                     stmt2.setLong(2, id);
                     stmt2.setString(3, seat_no);
                     rowsInserted = stmt2.executeUpdate();
+                    conn.commit();
 //                    System.out.println("Book: seat: " + seat_no + " customer: " + customer_id);
                     if (rowsInserted > 0) {
-                        return 0;   //success
+                        result = 0;   //success
                     } else {
-                        return -5; //ghosts and stuff
+                        result = -5; //ghosts and stuff
                     }
                 } else {
-                    return -3; //timeout
+                    result = -3; //timeout
                 }
             } else {
-                return -2; //reserved by someone else
+                result = -2; //reserved by someone else
             }
+            return result;
         } catch (Exception ex) {
+            try {
+                conn.rollback();
+            } catch (SQLException ex1) {
+                Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex1);
+            }
 //            System.out.println("Something wicked: rowInserted " + rowsInserted);
             ex.printStackTrace();
             return -5; //spooky error
@@ -157,6 +173,7 @@ public class Reservation implements ReservationInterface {
     public int book(String plane_no, String seat_no, long id) {
         long timeStamp = System.currentTimeMillis() / 1000L;
         int rowsInserted = 0;
+        int result;
         PreparedStatement stmt = null;
         PreparedStatement stmt2 = null;
         long customer_id = -1L;
@@ -173,7 +190,7 @@ public class Reservation implements ReservationInterface {
             }
             rs.close();
             if (customer_id == 0) {
-                return -1; //seat not reserved
+                result = -1; //seat not reserved
             }
             if (customer_id == id) {
                 if (timeStamp - booking_time < cooldown) {
@@ -184,19 +201,26 @@ public class Reservation implements ReservationInterface {
                     rowsInserted = stmt2.executeUpdate();
 //                    System.out.println("Book: seat: " + seat_no + " customer: " + customer_id);
                     if (rowsInserted > 0) {
-                        return 0;   //success
+                        result = 0;   //success
                     } else {
-                        return -5; //ghosts and stuff
+                        result = -5; //ghosts and stuff
                     }
                 } else {
-                    return -3; //timeout
+                    result = -3; //timeout
                 }
             } else {
-                return -2; //reserved by someone else
+                result = -2; //reserved by someone else
             }
+            conn.commit();
+            return result;
         } catch (Exception ex) {
 //            System.out.println("Something wicked: rowInserted " + rowsInserted);
             ex.printStackTrace();
+            try {
+                conn.rollback();
+            } catch (SQLException ex1) {
+                Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex1);
+            }
             return -5; //spooky error
         } finally {
             try {
@@ -214,12 +238,38 @@ public class Reservation implements ReservationInterface {
 
     @Override
     public void bookAll(String plane_no) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int customerNumber = 1;
+        long timeStamp = System.currentTimeMillis() / 1000L;
+
+        String bookQuery = "update seat set booked = 1 , booking_time = ? where plane_no = ?";
+        PreparedStatement stmt = null;
+        try {
+            stmt = conn.prepareStatement(bookQuery);
+            stmt.setLong(1, timeStamp);
+            stmt.setString(2, plane_no);
+            int rs = stmt.executeUpdate();
+            System.out.println(rs + " rows updated.");
+            conn.commit();
+        } catch (SQLException ex) {
+            Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
     public void clearAllBookings(String plane_no) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        long timeStamp = System.currentTimeMillis() / 1000L;
+
+        String bookQuery = "update seat set booked = null , booking_time = null , reserved = null where plane_no = ?";
+        PreparedStatement stmt = null;
+        try {
+            stmt = conn.prepareStatement(bookQuery);
+            stmt.setString(1, plane_no);
+            int rs = stmt.executeUpdate();
+            System.out.println(rs + " rows updated.");
+            conn.commit();
+        } catch (SQLException ex) {
+            Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
+        } 
     }
 
     @Override
@@ -230,6 +280,7 @@ public class Reservation implements ReservationInterface {
             stmt = conn.prepareStatement(isAllBookedQuery);
             stmt.setString(1, plane_no);
             ResultSet result = stmt.executeQuery();
+            conn.commit();
             return !result.next();
         } catch (SQLException ex) {
             Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
@@ -256,6 +307,7 @@ public class Reservation implements ReservationInterface {
             stmt.setLong(2, cooldown);
             stmt.setString(3, plane_no);
             ResultSet result = stmt.executeQuery();
+            conn.commit();
             return !result.next();
         } catch (SQLException ex) {
             Logger.getLogger(Reservation.class.getName()).log(Level.SEVERE, null, ex);
