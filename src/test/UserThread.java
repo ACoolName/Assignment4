@@ -38,8 +38,8 @@ public class UserThread extends Thread {
     private void makeBooking() {
         try {
             String seat = reservation.reserve(plane_no, customer_id);
-            long sleepTime = (long) rn.nextInt(10000);
-//            System.out.println("I am waiting for " + sleepTime + " seconnds thread " + customer_id);
+            long sleepTime = (long) rn.nextInt(13000);
+//            System.out.println("I am waiting for " + (sleepTime/1000f) + " seconnds thread " + customer_id);
             Thread.sleep(sleepTime);
 //            System.out.println("Woke up from fucking sleep thread " + customer_id);
 //            result = reservation.badBook(plane_no, seat, customer_id);
